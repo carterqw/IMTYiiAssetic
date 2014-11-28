@@ -46,7 +46,7 @@ class AssetManagerTest extends \PHPUnit_Framework_TestCase
      */
     protected function tearDown()
     {
-        @rmdir($this->basePath);
+        \CFileHelper::removeDirectory($this->basePath);
 
         parent::tearDown();
     }
@@ -86,6 +86,26 @@ class AssetManagerTest extends \PHPUnit_Framework_TestCase
             ),
             $this->assetManager->publish($path, false, -1, null, array(), 'smth')
         );
+    }
+    
+    public function testPublishCombineCertainFiles()
+    {
+        $rm = new \ReflectionMethod('IMT\YiiAssetic\AssetManager', 'generatePath');
+        $rm->setAccessible(true);
+    
+        $path = str_replace('/', DIRECTORY_SEPARATOR, __DIR__ . '/Fixture/public');
+        $hash = $rm->invoke($this->assetManager, $path);
+    
+        $this->assertEquals(
+                array(
+                    'js'  => "/$hash/smth.js",
+                    'css' => "/$hash/smth.css",
+                ),
+                $this->assetManager->publish($path, false, -1, null, array(), 'smth', array('js/file2.js', 'js/file.js'), array('css/file2.css', 'css/file.css'))
+        );
+        
+        $this->assertEquals("1\n2", file_get_contents("{$this->basePath}/{$hash}/smth.js"));
+        $this->assertEquals("1\n2", file_get_contents("{$this->basePath}/{$hash}/smth.css"));
     }
 
     public function testGetPublishedPathNotExists()
