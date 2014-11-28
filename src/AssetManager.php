@@ -177,7 +177,9 @@ class AssetManager extends \CAssetManager
         $level = -1,
         $forceCopy = null,
         array $filtersByExt = array(),
-        $combineTo = null
+        $combineTo = null,
+        array $js = array(),
+        array $css = array()
     ) {
         if ($forceCopy === null) {
             $forceCopy = $this->forceCopy;
@@ -247,8 +249,22 @@ class AssetManager extends \CAssetManager
                             continue;
                         }
 
+                        $assetsOfType = $$ext;
+                        if ( empty ($assetsOfType) ) {
+                            $orderedFiles = $files;
+                        }
+                        else {
+                            $orderedFiles = array();
+                            
+                            foreach ($assetsOfType as $oneAsset) {
+                                if (in_array("{$realPath}/{$oneAsset}", $files)) {
+                                    $orderedFiles[] = "{$realPath}/{$oneAsset}";
+                                }
+                            }
+                        } 
+
                         $filters = $this->resolveFiltersByExt($ext, $filtersByExt);
-                        $asset = $this->createAsset($files, $filters, $options);
+                        $asset = $this->createAsset($orderedFiles, $filters, $options);
                         $this->writeAsset($asset, $forceCopy);
 
                         $publishedPaths[$ext] = $this->getBaseUrl() . '/' . $asset->getTargetPath();
