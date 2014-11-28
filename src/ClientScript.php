@@ -103,7 +103,9 @@ class ClientScript extends \CClientScript
                 -1,
                 null,
                 !isset($package['filtersByExt']) ? array() : $package['filtersByExt'],
-                !isset($package['combineTo'])    ? null    : $package['combineTo']
+                !isset($package['combineTo'])    ? null    : $package['combineTo'],
+                !isset($package['js'])           ? array() : $package['js'],
+                !isset($package['css'])          ? array() : $package['css']
             );
         } else {
             $baseUrl = $this->getCoreScriptUrl();
