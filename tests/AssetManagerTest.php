@@ -108,6 +108,37 @@ class AssetManagerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("1\n2", file_get_contents("{$this->basePath}/{$hash}/smth.css"));
     }
 
+    public function testPublishTwoPackagesUnderSameBasePath()
+    {
+        $rm = new \ReflectionMethod('IMT\YiiAssetic\AssetManager', 'generatePath');
+        $rm->setAccessible(true);
+        
+        $path = str_replace('/', DIRECTORY_SEPARATOR, __DIR__ . '/Fixture/public');
+        $hash = $rm->invoke($this->assetManager, $path);
+        
+        $this->assertEquals(
+                array(
+                    'js'  => "/$hash/smth.js",
+                    'css' => "/$hash/smth.css",
+                ),
+                $this->assetManager->publish($path, false, -1, null, array(), 'smth', array('js/file2.js', 'js/file.js'), array('css/file2.css', 'css/file.css'))
+        );
+        
+        $this->assertEquals("1\n2", file_get_contents("{$this->basePath}/{$hash}/smth.js"));
+        $this->assertEquals("1\n2", file_get_contents("{$this->basePath}/{$hash}/smth.css"));
+        
+        $this->assertEquals(
+                array(
+                    'js'  => "/$hash/smth2.js",
+                    'css' => "/$hash/smth2.css",
+                ),
+                $this->assetManager->publish($path, false, -1, null, array(), 'smth2', array('js/file.js', 'js/file2.js'), array('css/file.css', 'css/file2.css'))
+        );
+        
+        $this->assertEquals("2\n1", file_get_contents("{$this->basePath}/{$hash}/smth2.js"));
+        $this->assertEquals("2\n1", file_get_contents("{$this->basePath}/{$hash}/smth2.css"));
+    }
+    
     public function testGetPublishedPathNotExists()
     {
         $this->assertFalse($this->assetManager->getPublishedPath(uniqid()));
@@ -140,6 +171,13 @@ class AssetManagerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(
             $this->assetManager->publish($path),
             $this->assetManager->getPublishedUrl($path)
+        );
+        
+        $path = str_replace('/', DIRECTORY_SEPARATOR, __DIR__ . '/Fixture/public');
+        
+        $this->assertEquals(
+                $this->assetManager->publish($path),
+                $this->assetManager->getPublishedUrl($path)
         );
     }
 
