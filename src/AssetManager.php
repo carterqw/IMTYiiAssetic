@@ -28,6 +28,8 @@ use IMT\YiiAssetic\Exception\RuntimeException;
  */
 class AssetManager extends \CAssetManager
 {
+    const PUBLISHED_UNCOMBINED = '';
+    
     /**
      * Determines whether assets will be cached
      *
@@ -181,10 +183,6 @@ class AssetManager extends \CAssetManager
         array $js = array(),
         array $css = array()
     ) {
-        if ($forceCopy === null) {
-            $forceCopy = $this->forceCopy;
-        }
-
         if ($this->linkAssets) {
             throw new LogicException(
                 sprintf(
@@ -194,8 +192,10 @@ class AssetManager extends \CAssetManager
             );
         }
 
-        if (isset($this->published[$path])) {
-            return $this->published[$path];
+        $forceCopy = is_null($forceCopy) ? $this->forceCopy : $forceCopy;
+
+        if (isset($this->published[$path][$combineTo])) {
+            return $this->published[$path][$combineTo];
         } elseif (($realPath = realpath($path)) !== false) {
             $hash = $this->generatePath($realPath, $hashByName);
 
@@ -215,6 +215,8 @@ class AssetManager extends \CAssetManager
 
                 return $this->published[$path] = $this->getBaseUrl() . '/' . $asset->getTargetPath();
             } elseif (is_dir($realPath)) {
+                $combination = is_null($combineTo) ? self::PUBLISHED_UNCOMBINED : $combineTo;
+                
                 $files = \CFileHelper::findFiles($realPath, array(
                     'exclude' => $this->excludeFiles,
                     'level'   => $level,
@@ -227,7 +229,7 @@ class AssetManager extends \CAssetManager
                         $this->writeAsset($asset, $forceCopy);
                     }
 
-                    return $this->published[$path] = $this->getBaseUrl() . '/' . $hash;
+                    return $this->published[$path][$combination] = $this->getBaseUrl() . '/' . $hash;
                 } else {
                     $filesByExt = array();
 
@@ -270,7 +272,7 @@ class AssetManager extends \CAssetManager
                         $publishedPaths[$ext] = $this->getBaseUrl() . '/' . $asset->getTargetPath();
                     }
 
-                    return $this->published[$path] = !$publishedPaths
+                    return $this->published[$path][$combination] = !$publishedPaths
                         ? $this->getBaseUrl() . '/' . $hash
                         : $publishedPaths;
                 }
@@ -305,7 +307,7 @@ class AssetManager extends \CAssetManager
     public function getPublishedUrl($path, $hashByName = false)
     {
         if (isset($this->published[$path])) {
-            return $this->published[$path];
+            return is_array($this->published[$path]) ? $this->published[$path][self::PUBLISHED_UNCOMBINED] : $this->published[$path];
         }
 
         if (($realPath = realpath($path)) !== false) {
