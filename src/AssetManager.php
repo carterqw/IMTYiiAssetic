@@ -242,12 +242,6 @@ class AssetManager extends \CAssetManager
                     foreach ($filesByExt as $ext => $files) {
                         // do not combine some file types (e.g. images)
                         if (!in_array($ext, array('css', 'js'), true)) {
-                            foreach ($files as $file) {
-                                $filters = $this->resolveFiltersByExt($ext, $filtersByExt);
-                                $asset = $this->createAsset($file, $filters, $options);
-                                $this->writeAsset($asset, $forceCopy);
-                            }
-
                             continue;
                         }
 
