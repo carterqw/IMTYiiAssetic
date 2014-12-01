@@ -80,12 +80,13 @@ class ClientScript extends \CClientScript
     /**
      * {@inheritDoc}
      */
-    public function getPackageBaseUrl($name)
+public function getPackageBaseUrl($name)
     {
         if (!isset($this->coreScripts[$name])) {
             return false;
         }
 
+        $baseUrl = '';
         $package = $this->coreScripts[$name];
 
         if (isset($package['baseUrl'])) {
@@ -96,8 +97,10 @@ class ClientScript extends \CClientScript
             }
 
             $baseUrl = rtrim($baseUrl, '/');
-        } elseif (isset($package['basePath'])) {
-            $baseUrl = \Yii::app()->getAssetManager()->publish(
+        }
+
+        if (isset($package['basePath'])) {
+            $publishedUrl = \Yii::app()->getAssetManager()->publish(
                 \Yii::getPathOfAlias($package['basePath']),
                 false,
                 -1,
@@ -107,6 +110,16 @@ class ClientScript extends \CClientScript
                 !isset($package['js'])           ? array() : $package['js'],
                 !isset($package['css'])          ? array() : $package['css']
             );
+
+            if ( $baseUrl ) {
+                $publishedUrl = is_array( $publishedUrl ) ? $publishedUrl : array( $publishedUrl );
+
+                foreach ( $publishedUrl as $type => &$url ) {
+                    $url = $baseUrl . $url;
+                }
+            }
+
+            $baseUrl = $publishedUrl;
         } else {
             $baseUrl = $this->getCoreScriptUrl();
         }
