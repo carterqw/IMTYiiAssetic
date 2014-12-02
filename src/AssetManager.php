@@ -253,8 +253,9 @@ class AssetManager extends \CAssetManager
                             $orderedFiles = array();
                             
                             foreach ($assetsOfType as $oneAsset) {
-                                if (in_array("{$realPath}/{$oneAsset}", $files)) {
-                                    $orderedFiles[] = "{$realPath}/{$oneAsset}";
+                                $oneAsset = realpath("{$realPath}/{$oneAsset}");
+                                if (in_array($oneAsset, $files)) {
+                                    $orderedFiles[] = $oneAsset;
                                 }
                             }
                         } 
