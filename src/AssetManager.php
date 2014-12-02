@@ -95,6 +95,11 @@ class AssetManager extends \CAssetManager
     protected $assetWriter;
 
     /**
+     * @var string
+     */
+    protected $basePath;
+    
+    /**
      * Built-in filters, can be replaced with user-defined filters
      *
      * @var array
