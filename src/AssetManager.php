@@ -461,4 +461,29 @@ class AssetManager extends \CAssetManager
             $this->getAssetWriter()->writeAsset($asset);
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getBasePath()
+    {
+        if($this->basePath===null)
+        {
+            $request=\Yii::app()->getRequest();
+            $this->setBasePath(dirname($request->getScriptFile()).DIRECTORY_SEPARATOR.self::DEFAULT_BASEPATH);
+        }
+        return $this->basePath;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    public function setBasePath($value)
+    {
+        if(is_dir($value) && is_writable($value))
+            $this->basePath = $value;
+        else
+            throw new CException(Yii::t('yii','CAssetManager.basePath "{path}" is invalid. Please make sure the directory exists and is writable by the Web server process.',
+                    array('{path}'=>$value)));
+    }
 }
