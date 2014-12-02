@@ -17,6 +17,8 @@ use Assetic\Cache\FilesystemCache;
 use Assetic\AssetWriter;
 use Assetic\FilterManager;
 
+use Yii;
+
 use IMT\YiiAssetic\Assetic\Factory\AssetFactory;
 use IMT\YiiAssetic\Exception\LogicException;
 use IMT\YiiAssetic\Exception\RuntimeException;
