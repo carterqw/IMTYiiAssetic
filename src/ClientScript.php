@@ -80,7 +80,7 @@ class ClientScript extends \CClientScript
     /**
      * {@inheritDoc}
      */
-public function getPackageBaseUrl($name)
+    public function getPackageBaseUrl($name)
     {
         if (!isset($this->coreScripts[$name])) {
             return false;
@@ -120,7 +120,7 @@ public function getPackageBaseUrl($name)
             }
 
             $baseUrl = $publishedUrl;
-        } else {
+        } else if (!isset($package['baseUrl'])) {
             $baseUrl = $this->getCoreScriptUrl();
         }
 
