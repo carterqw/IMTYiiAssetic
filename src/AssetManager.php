@@ -22,6 +22,7 @@ use Yii;
 use IMT\YiiAssetic\Assetic\Factory\AssetFactory;
 use IMT\YiiAssetic\Exception\LogicException;
 use IMT\YiiAssetic\Exception\RuntimeException;
+use Symfony\Component\Console\Tests\Input\StringInputTest;
 
 /**
  * This class overrides the core Yii class
@@ -31,7 +32,7 @@ use IMT\YiiAssetic\Exception\RuntimeException;
 class AssetManager extends \CAssetManager
 {
     const PUBLISHED_UNCOMBINED = '';
-    
+
     /**
      * Determines whether assets will be cached
      *
@@ -95,10 +96,12 @@ class AssetManager extends \CAssetManager
     protected $assetWriter;
 
     /**
+     * Base path of the published assets, this property is introduced because the
+     * `_basePath` property in the core Yii class has the `private` scope
      * @var string
      */
     protected $basePath;
-    
+
     /**
      * Built-in filters, can be replaced with user-defined filters
      *
@@ -160,6 +163,20 @@ class AssetManager extends \CAssetManager
     protected $published = array();
 
     /**
+     * Name of the configured cache component storing information about published assets.
+     * 
+     * @var string
+     */
+    public $cacheComponent = null;
+
+    /**
+     * Prefix that will be added to all cache keys to add some uniqueness.
+     * 
+     * @var string
+     */
+    public $cachePrefix = 'AssetsManager';
+
+    /**
      * {@inheritDoc}
      */
     public function init()
@@ -201,8 +218,9 @@ class AssetManager extends \CAssetManager
 
         $forceCopy = is_null($forceCopy) ? $this->forceCopy : $forceCopy;
 
-        if (isset($this->published[$path][$combineTo])) {
-            return $this->published[$path][$combineTo];
+        $published = $this->getCachedAsset($path);
+        if (isset($published[$combineTo])) {
+            return $published[$combineTo];
         } elseif (($realPath = realpath($path)) !== false) {
             $hash = $this->generatePath($realPath, $hashByName);
 
@@ -220,10 +238,10 @@ class AssetManager extends \CAssetManager
                 $asset = $this->createAsset($realPath, $filters, $options);
                 $this->writeAsset($asset, $forceCopy);
 
-                return $this->published[$path] = $this->getBaseUrl() . '/' . $asset->getTargetPath();
+                return $this->setCachedAsset($path, $this->getBaseUrl() . '/' . $asset->getTargetPath());
             } elseif (is_dir($realPath)) {
                 $combination = is_null($combineTo) ? self::PUBLISHED_UNCOMBINED : $combineTo;
-                
+
                 $files = \CFileHelper::findFiles($realPath, array(
                     'exclude' => $this->excludeFiles,
                     'level'   => $level,
@@ -236,7 +254,11 @@ class AssetManager extends \CAssetManager
                         $this->writeAsset($asset, $forceCopy);
                     }
 
-                    return $this->published[$path][$combination] = $this->getBaseUrl() . '/' . $hash;
+                    $published = $this->getCachedAsset($path);
+                    $published[$combination] = $this->getBaseUrl() . '/' . $hash;
+
+                    $this->setCachedAsset($path, $published);
+                    return $published[$combination];
                 } else {
                     $filesByExt = array();
 
@@ -258,14 +280,14 @@ class AssetManager extends \CAssetManager
                         }
                         else {
                             $orderedFiles = array();
-                            
+
                             foreach ($assetsOfType as $oneAsset) {
                                 $oneAsset = realpath("{$realPath}/{$oneAsset}");
                                 if (in_array($oneAsset, $files)) {
                                     $orderedFiles[] = $oneAsset;
                                 }
                             }
-                        } 
+                        }
 
                         $filters = $this->resolveFiltersByExt($ext, $filtersByExt);
                         $asset = $this->createAsset($orderedFiles, $filters, $options);
@@ -274,14 +296,55 @@ class AssetManager extends \CAssetManager
                         $publishedPaths[$ext] = $this->getBaseUrl() . '/' . $asset->getTargetPath();
                     }
 
-                    return $this->published[$path][$combination] = !$publishedPaths
+                    $published = $this->getCachedAsset($path);
+
+                    $published[$combination] = !$publishedPaths
                         ? $this->getBaseUrl() . '/' . $hash
                         : $publishedPaths;
+
+                    $this->setCachedAsset($path, $published);
+                    return $published[$combination];
                 }
             }
         }
 
         throw new RuntimeException("The `$path` path does not exist.");
+    }
+
+    /**
+     * Retrieves cached asset information by its path.
+     * 
+     * @param string $path
+     * @return array
+     */
+    protected function getCachedAsset($path)
+    {
+        if ( $this->cacheComponent ) {
+            $asset = Yii::app()->{$this->cacheComponent}->get("{$this->cachePrefix}:{$path}");
+        }
+        else {
+            $asset = isset($this->published[$path]) ? $this->published[$path] : false;
+        }
+
+        return $asset ? $asset : array();
+    }
+
+    /**
+     * Stores information about a published asset, using its path as a cache key.
+     *  
+     * @param string $path
+     * @param array|string $asset
+     * @return mixed
+     */
+    protected function setCachedAsset($path, $asset)
+    {
+        $this->published[$path] = $asset;
+
+        if ( $this->cacheComponent ) {
+            Yii::app()->{$this->cacheComponent}->set("{$this->cachePrefix}:{$path}", $asset);
+        }
+
+        return $asset;
     }
 
     /**
@@ -308,8 +371,9 @@ class AssetManager extends \CAssetManager
      */
     public function getPublishedUrl($path, $hashByName = false)
     {
-        if (isset($this->published[$path])) {
-            return is_array($this->published[$path]) ? $this->published[$path][self::PUBLISHED_UNCOMBINED] : $this->published[$path];
+        $published = $this->getCachedAsset($path);
+        if (!empty($published)) {
+            return is_array($published) ? $published[self::PUBLISHED_UNCOMBINED] : $published;
         }
 
         if (($realPath = realpath($path)) !== false) {
@@ -482,7 +546,7 @@ class AssetManager extends \CAssetManager
         }
         return $this->basePath;
     }
-    
+
     /**
      * {@inheritDoc}
      */
