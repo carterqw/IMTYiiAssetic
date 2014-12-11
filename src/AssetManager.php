@@ -555,7 +555,7 @@ class AssetManager extends \CAssetManager
         if(is_dir($value) && is_writable($value))
             $this->basePath = $value;
         else
-            throw new CException(Yii::t('yii','CAssetManager.basePath "{path}" is invalid. Please make sure the directory exists and is writable by the Web server process.',
+            throw new \CException(Yii::t('yii','CAssetManager.basePath "{path}" is invalid. Please make sure the directory exists and is writable by the Web server process.',
                     array('{path}'=>$value)));
     }
 }
